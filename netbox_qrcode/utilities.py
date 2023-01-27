@@ -28,11 +28,29 @@ def get_img_b64(img):
     return str(base64.b64encode(stream.getvalue()), encoding='ascii')
 
 
-def get_qr_text(max_size, text, font='TahomaBold'):
-    font_size = 56
-    tmpimg = Image.new('L', max_size, 'white')
+def get_qr_text(max_size, text, font='TahomaBold', font_size=0):
+
+    tmpimg = Image.new('P', max_size, 'white')
     text_too_large = True
-    while text_too_large:
+
+    #If no Font Size in Config File, then Match the text to the QR Code
+    if font_size == 0:
+
+        font_size = 56
+
+        while text_too_large:
+            file_path = resource_stream(__name__, 'fonts/{}.ttf'.format(font))
+            try:
+                fnt = ImageFont.truetype(file_path, font_size)
+            except Exception:
+                fnt = ImageFont.load_default()
+
+            draw = ImageDraw.Draw(tmpimg)
+            w, h = draw.textsize(text, font=fnt)
+            if w < max_size[0] - 4 and h < max_size[1] - 4:
+                text_too_large = False
+            font_size -= 1
+    else:
         file_path = resource_stream(__name__, 'fonts/{}.ttf'.format(font))
         try:
             fnt = ImageFont.truetype(file_path, font_size)
@@ -41,9 +59,6 @@ def get_qr_text(max_size, text, font='TahomaBold'):
 
         draw = ImageDraw.Draw(tmpimg)
         w, h = draw.textsize(text, font=fnt)
-        if w < max_size[0] - 4 and h < max_size[1] - 4:
-            text_too_large = False
-        font_size -= 1
 
     img = Image.new('L', (w, h), 'white')
     draw = ImageDraw.Draw(img)
@@ -63,7 +78,7 @@ def get_concat(im1, im2, direction='right'):
             'Invalid direction "{}" (must be one of "left", "right", "up", or "down")'.format(direction)
         )
 
-    dst = Image.new('L', (width, height), 'white')
+    dst = Image.new('P', (width, height), 'white')
 
     if direction == 'right' or direction == 'left':
         if im1.height > im2.height:
